@@ -13,6 +13,7 @@ class TestReseau(unittest.TestCase):
         
         terrain.definir_entree(1)
         self.assertEqual(terrain.noeud_entree, 1)
+        
      
     def test_ajout_noeud(self):
         terrain = Terrain()

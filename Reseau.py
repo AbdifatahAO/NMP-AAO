@@ -29,147 +29,91 @@ class Reseau:
             return
         if (n1, n2) not in self.arcs:
             self.arcs.append((n1, n2))
-
+            
     def set_strategie(self, strat: StrategieReseau):
         self.strat = strat
 
     def valider_reseau(self) -> bool:
     
-    if not hasattr(self, 'noeud_entree') or self.noeud_entree == -1:
+    if self.noeud_entree == -1:
+        print("Erreur : Aucun nœud d'entrée défini.")
         return False
-   
-    #La fonction hasattr en Python est utilisée pour vérifier si un objet possède un attribut spécifique. Elle renvoie True si l'attribut existe, et False sinon.
-    visitzs = set()
+
+    # Utilisation d'un algorithme de parcours pour vérifier la connectivité (parcours en largeur ici)
+    visites = set()
     a_visiter = [self.noeud_entree]
 
     while a_visiter:
-        n = a_visiter.pop()
-        if n not in visites:
-            visites.add(n)
-            voisins = [n2 for n1, n2 in self.arcs if n1 == n] + [n1 for n1, n2 in self.arcs if n2 == n]
-            a_visiter.extend(voisins)
+        noeud_courant = a_visiter.pop(0)
+        if noeud_courant not in visites:
+            visites.add(noeud_courant)
+            # Ajouter tous les voisins connectés à visiter
+            for arc in self.arcs:
+                if noeud_courant == arc[0]:
+                    a_visiter.append(arc[1])
+                elif noeud_courant == arc[1]:
+                    a_visiter.append(arc[0])
 
-    for n in self.noeuds:
-        if n not in visites:
+    # Vérifier si tous les nœuds sont visités
+    if len(visites) == len(self.noeuds):
+        return True
+    else:
+        print("Erreur : Certains nœuds ne sont pas connectés au nœud d'entrée.")
+        return False
+
+
+
+    def valider_distribution(self, terrain: "Terrain") -> bool:
+    
+    if self.noeud_entree == -1:
+        print("Erreur : Aucun nœud d'entrée défini.")
+        return False
+
+    # Récupérer les coordonnées des clients sur le terrain
+    clients = terrain.get_clients()  # Une liste de coordonnées des clients, ex : [(1, 2), (3, 4), ...]
+
+    # Vérifier que chaque client est connecté au réseau
+    for client in clients:
+        est_alimente = False
+        for noeud, coords in self.noeuds.items():
+            if coords == client:
+                # Vérifier que ce nœud est relié au réseau via le nœud d'entrée
+                if self.est_connecte_au_noeud_entree(noeud):
+                    est_alimente = True
+                    break
+        if not est_alimente:
+            print(f"Erreur : Le client aux coordonnées {client} n'est pas alimenté.")
             return False
 
     return True
-====================
-    from Terrain import Terrain, Case
-from StrategieReseau import StrategieReseau, StrategieReseauAuto
-
-class Reseau:
-    def __init__(self):
-        self.strat = StrategieReseauAuto()
-        self.noeuds = {}
-        self.arcs = []
-        self.noeud_entree = -1
-
-    def definir_entree(self, n: int) -> None:
-        if n in self.noeuds.keys():
-            self.noeud_entree = n
-        else:
-            self.noeud_entree = -1
-
-    def ajouter_noeud(self, n: int, coords: tuple[int, int]):
-        if n >= 0:
-            self.noeuds[n] = coords
-
-    def ajouter_arc(self, n1: int, n2: int) -> None:
-        if n1 > n2:
-            tmp = n2
-            n2 = n1
-            n1 = tmp
-        if n1 not in self.noeuds.keys() or n2 not in self.noeuds.keys():
-            return
-        if (n1, n2) not in self.arcs:
-            self.arcs.append((n1, n2))
-
-    def set_strategie(self, strat: StrategieReseau):
-        self.strat = strat
-
-    def valider_reseau(self) -> bool:
-        if not hasattr(self, 'noeud_entree') or self.noeud_entree == -1:
-            return False
-
-        visites = set()
-        a_visiter = [self.noeud_entree]
-
-        while a_visiter:
-            n = a_visiter.pop()
-            if n not in visites:
-                visites.add(n)
-                voisins = [n2 for n1, n2 in self.arcs if n1 == n] + [n1 for n1, n2 in self.arcs if n2 == n]
-                a_visiter.extend(voisins)
-
-        for n in self.noeuds:
-            if n not in visites:
-                return False
-
-        return True
 
 
-    def valider_distribution(self, t: Terrain) -> bool:
-        #pas sur de ce code
-        if not self.valider_reseau():
-            return False
-
-        clients_coords = t.get_clients()
-        for client in clients_coords:
-            client_noeud = None
-            for noeud, coords in self.noeuds.items():
-                if coords == client:
-                    client_noeud = noeud
-                    break
-
-            if client_noeud is None:
-                return False
-            
-            visites = set()
-            a_visiter = [client_noeud]
-
-            while a_visiter:
-                n = a_visiter.pop()
-                if n == self.noeud_entree:
-                    break
-                if n not in visites:
-                    visites.add(n)
-                    voisins = [n2 for n1, n2 in self.arcs if n1 == n] + [n1 for n1, n2 in self.arcs if n2 == n]
-                    a_visiter.extend(voisins)
-            else:
-                return False
-
-        return True
-    # reseau = Reseau()
-    # entree_coords = terrain.get_entree()
-    # reseau.ajouter_noeud(1, entree_coords)
-    # for i, client in enumerate([(1,0), (2,0), (2,5), (5,1), (5,4), (4,5)], start=2):
-    # reseau.ajouter_noeud(i, client)
-    # reseau.definir_entree(1)
-    # for i in range(2, len(reseau.noeuds) + 1):
-    # reseau.ajouter_arc(1, i)
-    # reseau.afficher()
-    
-    
     def configurer(self, t: Terrain):
         self.noeud_entree, self.noeuds, self.arcs  = self.strat.configurer(t)
-
-  def afficher(self) -> None:
-    print("Configuration du Réseau :")
+    
+     def afficher(self) -> None:
+    # Affichage des nœuds
+    print("=== Configuration du Réseau ===")
     print("Nœuds :")
     for noeud, coords in self.noeuds.items():
-        print(f"  Nœud {noeud} : {coords}")
-    print("Arcs :")
-    for arc in self.arcs:
-        print(f"  Arc entre {arc[0]} et {arc[1]}")
+        print(f"  - Nœud {noeud} : Coordonnées {coords}")
     
-    print("Nœud d'entrée :")
-    if self.noeud_entree != -1:
-        print(f"  Nœud {self.noeud_entree} : {self.noeuds[self.noeud_entree]}")
+    # Affichage des arcs
+    print("\nArcs :")
+    if not self.arcs:
+        print("  Aucun arc dans le réseau.")
     else:
-        print("  Aucune entrée définie")
-
-
+        for arc in self.arcs:
+            print(f"  - Arc entre les nœuds {arc[0]} et {arc[1]}")
+    
+    # Affichage du nœud d'entrée
+    print("\nNœud d'entrée :")
+    if self.noeud_entree == -1:
+        print("  Aucun nœud d'entrée défini.")
+    else:
+        print(f"  Nœud d'entrée : {self.noeud_entree}")
+    print("=== Fin de la Configuration ===")
+    
     def afficher_avec_terrain(self, t: Terrain) -> None:
         for ligne, l in enumerate(t.cases):
             for colonne, c in enumerate(l):
